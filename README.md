@@ -27,6 +27,26 @@ pnpm install github:dforce-network/elizaos-plugin-intenet
 EVM_PRIVATE_KEY=your-private-key-here
 ```
 
+## Integration with eliza
+
+### Install the plugin
+
+Currently this plugin is not in the eliza registry, manually installation is needed instead of using the cli
+
+```shell
+cd eliza
+git clone https://github.com/dforce-network/elizaos-plugin-intenet packages/plugin-intenet
+pnpm add "@elizaos/core@workspace:*" --filter ./packages/plugin-intenet/
+pnpm build
+```
+### Enable in charactor
+
+
+```json
+"plugins": ["@elizaos-plugins/plugin-intenet"],
+```
+
+
 ## Actions
 
 ### 1. Launch
