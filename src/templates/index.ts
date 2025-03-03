@@ -50,6 +50,7 @@ Respond with a JSON markdown block containing only the extracted values. Use nul
 {
     "amount": string | null
     "tokenAddress": string | null,
+    "chain": string | null
 }
 \`\`\`
 `;
@@ -70,6 +71,7 @@ Respond with a JSON markdown block containing only the extracted values. Use nul
 {
     "amount": string | null,
     "tokenAddress": string | null
+    "chain": string | null
 }
 \`\`\`
 `;

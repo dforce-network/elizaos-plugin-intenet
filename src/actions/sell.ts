@@ -13,47 +13,47 @@ import {
     createWalletClient,
     createPublicClient,
     http,
-    PublicClient,
     WalletClient,
+    parseEther,
+    formatEther,
 } from "viem";
 import * as viemChains from "viem/chains";
 import {privateKeyToAccount} from "viem/accounts";
-import {launch, LaunchParams, isSupportedChain} from "intenet-sdk";
+import {sell, SellParams, isSupportedChain} from "intenet-sdk";
 
-import {launchTemplate} from "../templates";
-import {LaunchTokenParams} from "../types";
+import {sellTemplate} from "../templates";
+import {SellTokenParams} from "../types";
 
-export class LaunchAction {
+export class SellAction {
     constructor(private walletClient: WalletClient, private publicClient) {}
 
-    async launch(params: LaunchParams) {
-        const tx = await launch(
-            params as LaunchParams,
-            this.walletClient,
-            this.publicClient
-        );
+    async sell(params: SellParams) {
+        const tx = await sell(params, this.walletClient, this.publicClient);
         return tx;
     }
 }
 
-const buildLaunchDetails = async (state: State, runtime: IAgentRuntime) => {
+const buildSellDetails = async (
+    state: State,
+    runtime: IAgentRuntime
+): Promise<SellTokenParams> => {
     const context = composeContext({
         state,
-        template: launchTemplate,
+        template: sellTemplate,
     });
 
-    const launchDetails = (await generateObjectDeprecated({
+    const sellDetails = (await generateObjectDeprecated({
         runtime,
         context,
         modelClass: ModelClass.SMALL,
-    })) as LaunchTokenParams;
+    })) as SellTokenParams;
 
-    return launchDetails;
+    return sellDetails;
 };
 
-export const launchAction = {
-    name: "LAUNCH_TOKEN",
-    description: "Launch a new token using InteNet Protocol",
+export const sellAction = {
+    name: "SELL_TOKEN",
+    description: "Sell tokens using InteNet Protocol",
     handler: async (
         runtime: IAgentRuntime,
         message: Memory,
@@ -67,7 +67,7 @@ export const launchAction = {
             state = await runtime.updateRecentMessageState(state);
         }
 
-        let details = await buildLaunchDetails(state, runtime);
+        let details = await buildSellDetails(state, runtime);
 
         if (!details.chain) {
             details = {
@@ -75,7 +75,6 @@ export const launchAction = {
                 chain: "sepolia",
             };
         }
-
         const chain = viemChains[details.chain.toLowerCase()];
 
         if (!isSupportedChain(chain.id)) {
@@ -83,7 +82,6 @@ export const launchAction = {
         }
 
         const privateKey = runtime.getSetting("EVM_PRIVATE_KEY");
-
         const account = privateKeyToAccount(privateKey as `0x${string}`);
 
         const walletClient = createWalletClient({
@@ -97,49 +95,43 @@ export const launchAction = {
             chain,
         });
 
-        const action = new LaunchAction(walletClient, publicClient);
+        const action = new SellAction(walletClient, publicClient);
 
-        const launchParams = {
-            creator: details.creatorAddress as `0x${string}`,
-            name: details.name,
-            ticker: details.symbol,
-            cores: [1],
-            description: details.description,
-            image: details.image,
-            urls: [
-                details.website || "",
-                details.twitter || "",
-                details.telegram || "",
-                details.discord || "",
-            ] as [string, string, string, string],
-            purchaseAmount: BigInt(0),
+        const sellParams: SellParams = {
+            tokenAddress: details.tokenAddress,
+            amount: parseEther(details.amount),
         };
 
         try {
-            const res = await action.launch(launchParams);
+            const res = await action.sell(sellParams);
             if (callback) {
                 callback({
-                    text: `Successfully launched ${launchParams.name} (${launchParams.ticker}) \nToken Address: ${res.tokenAddress}`,
+                    text: `Successfully sold ${formatEther(
+                        res.tokenAmount
+                    )} tokens from ${
+                        sellParams.tokenAddress
+                    }\nTransaction Hash: ${res.transactionHash}`,
                     content: {
                         success: true,
                         hash: res.transactionHash,
-                        chain: chain.name,
+                        amount: sellParams.amount.toString(),
+                        tokenAddress: sellParams.tokenAddress,
                     },
                 });
             }
             return true;
         } catch (error) {
-            console.error("Error during launching token:", error);
+            console.error("Error during token sale:", error);
             if (callback) {
                 callback({
-                    text: `Error launching tokens: ${error.message}`,
+                    text: `Error selling tokens: ${error.message}`,
                     content: {error: error.message},
                 });
             }
             return false;
         }
     },
-    template: launchTemplate,
+    template: sellTemplate,
     validate: async (runtime: IAgentRuntime) => {
         const privateKey = runtime.getSetting("EVM_PRIVATE_KEY");
         return typeof privateKey === "string" && privateKey.startsWith("0x");
@@ -149,18 +141,18 @@ export const launchAction = {
             {
                 user: "assistant",
                 content: {
-                    text: "I'll help you launch a new token called 'MyToken' with ticker 'MTK'",
-                    action: "LAUNCH_TOKEN",
+                    text: "I'll help you sell tokens from your wallet",
+                    action: "SELL_TOKEN",
                 },
             },
             {
                 user: "user",
                 content: {
-                    text: "Launch a new token called MyToken with ticker MTK on Base",
-                    action: "LAUNCH_TOKEN",
+                    text: "Sell 10 tokens of token 0x1234...",
+                    action: "SELL_TOKEN",
                 },
             },
         ],
     ],
-    similes: ["LAUNCH_TOKEN", "CREATE_TOKEN"],
-}; // TODO: add more examples
+    similes: ["SELL_TOKEN", "SELL"],
+};

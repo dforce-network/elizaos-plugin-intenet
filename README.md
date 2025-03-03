@@ -1,18 +1,16 @@
-# @elizaos/plugin-intenet
+# @elizaos-plugins/plugin-intenet
 
-This plugin provides actions and providers for interacting with the InteNet launch pad protocol.
+This plugin provides actions and providers for interacting with the InteNet Protocol, a decentralized launchpad for token creation and trading.
 
 ## Description
 
-The InteNet plugin provides comprehensive functionality for interacting with the InteNet launch pad protocol, including token launches, trading.
+The InteNet plugin enables seamless interaction with the InteNet Protocol, allowing users to launch new tokens, buy existing tokens, and sell tokens across multiple supported blockchains.
 
 ## Features
 
-- Multi-chain support for InteNet protocol
-- Token launch participation
-- Token trade
-
-## Installation
+- Token creation and launch capabilities with customizable parameters
+- Token trading functionality (buy and sell operations)
+- Transaction management with detailed reporting
 
 ```bash
 pnpm install github:dforce-network/elizaos-plugin-intenet
@@ -27,25 +25,25 @@ pnpm install github:dforce-network/elizaos-plugin-intenet
 EVM_PRIVATE_KEY=your-private-key-here
 ```
 
-## Integration with eliza
+## Integration with Eliza
 
 ### Install the plugin
 
-Currently this plugin is not in the eliza registry, manually installation is needed instead of using the cli
+This plugin is not currently available in the Eliza registry. Manual installation is required instead of using the CLI:
 
 ```shell
 cd eliza
 git clone https://github.com/dforce-network/elizaos-plugin-intenet packages/plugin-intenet
 pnpm add "@elizaos/core@workspace:*" --filter ./packages/plugin-intenet/
+pnpm add "@elizaos-plugins/plugin-intenet@workspace:*" --filter ./agent
 pnpm build
 ```
-### Enable in charactor
 
+### Enable in charactor
 
 ```json
 "plugins": ["@elizaos-plugins/plugin-intenet"],
 ```
-
 
 ## Actions
 
@@ -96,6 +94,11 @@ pnpm test
 ```
 
 ## Future Enhancements
+
+- **Multi-chain Support**: Expand beyond current chains to include additional EVM-compatible networks
+- **Advanced Trading Features**: Implement limit orders, stop-loss, and other advanced trading mechanisms
+- **Portfolio Management**: Add tools for tracking token performance and portfolio analytics
+- **Enhanced Token Analytics**: Provide deeper insights into token metrics and market performance
 
 ## Credits
 

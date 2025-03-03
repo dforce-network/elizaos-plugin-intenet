@@ -1,40 +1,16 @@
 import {describe, it, expect, beforeAll} from "vitest";
-import {privateKeyToAccount} from "viem/accounts";
-import {
-    Account,
-    http,
-    createWalletClient,
-    createPublicClient,
-    WalletClient,
-    PublicClient,
-} from "viem";
 import {sepolia} from "viem/chains";
 import {LaunchAction} from "../actions/launch";
+import {setup} from "./utils";
 
 describe("Launch Action", () => {
     let la: LaunchAction;
-    let walletClient: WalletClient;
+    let walletClient;
     let publicClient;
+    let chain = sepolia;
 
     beforeAll(async () => {
-        const pk =
-            process.env["EVM_PRIVATE_KEY"] ||
-            "0x0000000000000000000000000000000000000000000000000000000000000000";
-        const account = privateKeyToAccount(pk as `0x${string}`);
-
-        console.log(account);
-
-        walletClient = createWalletClient({
-            account,
-            chain: sepolia,
-            transport: http(),
-        });
-
-        publicClient = createPublicClient({
-            chain: sepolia,
-            transport: http(),
-        });
-
+        ({walletClient, publicClient} = setup(chain));
         la = new LaunchAction(walletClient, publicClient);
     });
 
@@ -53,7 +29,6 @@ describe("Launch Action", () => {
             ],
             purchaseAmount: BigInt(0),
             creator: walletClient.account.address,
-            network: sepolia,
         });
 
         console.log(result);

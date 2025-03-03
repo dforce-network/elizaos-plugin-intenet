@@ -1,4 +1,4 @@
-export interface LaunchParams {
+export interface LaunchTokenParams {
     name: string;
     symbol: string;
     description: string;
@@ -8,5 +8,17 @@ export interface LaunchParams {
     telegram: string;
     discord: string;
     creatorAddress: string;
-    chain: string;
+    chain?: string;
+}
+
+export interface BuyTokenParams {
+    tokenAddress: string;
+    amount: string;
+    chain?: string;
+}
+
+export interface SellTokenParams {
+    tokenAddress: string;
+    amount: string;
+    chain?: string;
 }

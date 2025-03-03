@@ -13,47 +13,46 @@ import {
     createWalletClient,
     createPublicClient,
     http,
-    PublicClient,
     WalletClient,
+    parseEther,
 } from "viem";
 import * as viemChains from "viem/chains";
 import {privateKeyToAccount} from "viem/accounts";
-import {launch, LaunchParams, isSupportedChain} from "intenet-sdk";
+import {buy, BuyParams, isSupportedChain} from "intenet-sdk";
 
-import {launchTemplate} from "../templates";
-import {LaunchTokenParams} from "../types";
+import {buyTemplate} from "../templates";
+import {BuyTokenParams} from "../types";
 
-export class LaunchAction {
+export class BuyAction {
     constructor(private walletClient: WalletClient, private publicClient) {}
 
-    async launch(params: LaunchParams) {
-        const tx = await launch(
-            params as LaunchParams,
-            this.walletClient,
-            this.publicClient
-        );
+    async buy(params: BuyParams) {
+        const tx = await buy(params, this.walletClient, this.publicClient);
         return tx;
     }
 }
 
-const buildLaunchDetails = async (state: State, runtime: IAgentRuntime) => {
+const buildBuyDetails = async (
+    state: State,
+    runtime: IAgentRuntime
+): Promise<BuyTokenParams> => {
     const context = composeContext({
         state,
-        template: launchTemplate,
+        template: buyTemplate,
     });
 
-    const launchDetails = (await generateObjectDeprecated({
+    const buyDetails = (await generateObjectDeprecated({
         runtime,
         context,
         modelClass: ModelClass.SMALL,
-    })) as LaunchTokenParams;
+    })) as BuyTokenParams;
 
-    return launchDetails;
+    return buyDetails;
 };
 
-export const launchAction = {
-    name: "LAUNCH_TOKEN",
-    description: "Launch a new token using InteNet Protocol",
+export const buyAction = {
+    name: "BUY_TOKEN",
+    description: "Buy tokens using InteNet Protocol",
     handler: async (
         runtime: IAgentRuntime,
         message: Memory,
@@ -67,7 +66,7 @@ export const launchAction = {
             state = await runtime.updateRecentMessageState(state);
         }
 
-        let details = await buildLaunchDetails(state, runtime);
+        let details = await buildBuyDetails(state, runtime);
 
         if (!details.chain) {
             details = {
@@ -75,7 +74,6 @@ export const launchAction = {
                 chain: "sepolia",
             };
         }
-
         const chain = viemChains[details.chain.toLowerCase()];
 
         if (!isSupportedChain(chain.id)) {
@@ -83,7 +81,6 @@ export const launchAction = {
         }
 
         const privateKey = runtime.getSetting("EVM_PRIVATE_KEY");
-
         const account = privateKeyToAccount(privateKey as `0x${string}`);
 
         const walletClient = createWalletClient({
@@ -97,49 +94,39 @@ export const launchAction = {
             chain,
         });
 
-        const action = new LaunchAction(walletClient, publicClient);
+        const action = new BuyAction(walletClient, publicClient);
 
-        const launchParams = {
-            creator: details.creatorAddress as `0x${string}`,
-            name: details.name,
-            ticker: details.symbol,
-            cores: [1],
-            description: details.description,
-            image: details.image,
-            urls: [
-                details.website || "",
-                details.twitter || "",
-                details.telegram || "",
-                details.discord || "",
-            ] as [string, string, string, string],
-            purchaseAmount: BigInt(0),
+        const buyParams: BuyParams = {
+            tokenAddress: details.tokenAddress,
+            amount: parseEther(details.amount),
         };
 
         try {
-            const res = await action.launch(launchParams);
+            const res = await action.buy(buyParams);
             if (callback) {
                 callback({
-                    text: `Successfully launched ${launchParams.name} (${launchParams.ticker}) \nToken Address: ${res.tokenAddress}`,
+                    text: `Successfully bought ${res.tokenAmount} tokens at ${buyParams.tokenAddress}\nTransaction Hash: ${res.transactionHash}`,
                     content: {
                         success: true,
                         hash: res.transactionHash,
-                        chain: chain.name,
+                        amount: buyParams.amount.toString(),
+                        tokenAddress: buyParams.tokenAddress,
                     },
                 });
             }
             return true;
         } catch (error) {
-            console.error("Error during launching token:", error);
+            console.error("Error during token purchase:", error);
             if (callback) {
                 callback({
-                    text: `Error launching tokens: ${error.message}`,
+                    text: `Error buying tokens: ${error.message}`,
                     content: {error: error.message},
                 });
             }
             return false;
         }
     },
-    template: launchTemplate,
+    template: buyTemplate,
     validate: async (runtime: IAgentRuntime) => {
         const privateKey = runtime.getSetting("EVM_PRIVATE_KEY");
         return typeof privateKey === "string" && privateKey.startsWith("0x");
@@ -149,18 +136,18 @@ export const launchAction = {
             {
                 user: "assistant",
                 content: {
-                    text: "I'll help you launch a new token called 'MyToken' with ticker 'MTK'",
-                    action: "LAUNCH_TOKEN",
+                    text: "I'll help you buy tokens from the specified address",
+                    action: "BUY_TOKEN",
                 },
             },
             {
                 user: "user",
                 content: {
-                    text: "Launch a new token called MyToken with ticker MTK on Base",
-                    action: "LAUNCH_TOKEN",
+                    text: "Buy 10 INT worth of tokens of token 0x1234...",
+                    action: "BUY_TOKEN",
                 },
             },
         ],
     ],
-    similes: ["LAUNCH_TOKEN", "CREATE_TOKEN"],
-}; // TODO: add more examples
+    similes: ["BUY_TOKEN", "PURCHASE_TOKEN"],
+};
